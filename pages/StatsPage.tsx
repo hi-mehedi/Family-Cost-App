@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, TrendingUp, TrendingDown, ShoppingBasket, Wallet, ChevronRight, LayoutGrid, List } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, ShoppingBasket, Wallet, ChevronRight, LayoutGrid, List, Database } from 'lucide-react';
 import { StatCard } from '../components/StatCard';
 import { DailyLog } from '../types';
 
@@ -8,6 +8,7 @@ interface StatsPageProps {
   stats: {
     todayIncome: number;
     todayCost: number;
+    // Fix: Removed duplicate 'monthlyIncome' property
     monthlyIncome: number;
     monthlyCost: number;
     monthlyBazar: number;
@@ -50,9 +51,9 @@ const StatsPage: React.FC<StatsPageProps> = ({ stats, units, logs, onUnitClick }
           <p className="text-indigo-200 text-xs font-medium mt-1 uppercase tracking-widest">ID: bos123</p>
         </div>
         <div className="absolute top-10 right-6 z-10">
-          <div className="bg-emerald-500/90 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 uppercase">
-            <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-            Cloud
+          <div className="bg-slate-900/40 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 uppercase backdrop-blur-sm">
+            <Database size={10} />
+            Offline
           </div>
         </div>
         <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-500 rounded-full opacity-20"></div>

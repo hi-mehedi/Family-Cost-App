@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Search, ChevronDown, ChevronUp, FileText, Calendar, Edit3 } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, FileText, Calendar, Edit3, Database } from 'lucide-react';
 import { DailyLog } from '../types';
 
 interface HistoryPageProps {
@@ -29,9 +28,9 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ logs, onEdit }) => {
         <h2 className="text-2xl font-black text-white italic">FAMILY COST</h2>
         <p className="text-indigo-200 text-xs font-medium mt-1 uppercase tracking-widest">ID: bos123</p>
         <div className="absolute top-10 right-6">
-          <div className="bg-emerald-500/90 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 uppercase">
-            <span className="w-2 h-2 bg-white rounded-full"></span>
-            Cloud
+          <div className="bg-slate-900/40 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 uppercase backdrop-blur-sm">
+            <Database size={10} />
+            Offline
           </div>
         </div>
       </div>
@@ -61,7 +60,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ logs, onEdit }) => {
           {logs.length === 0 ? (
             <div className="text-center py-20">
                <Calendar size={48} className="mx-auto text-slate-200 mb-4" />
-               <p className="text-slate-400 font-bold uppercase text-xs">No records for this month</p>
+               <p className="text-slate-400 font-bold uppercase text-xs">No records saved locally</p>
             </div>
           ) : logs.map((log) => {
             const isExpanded = expandedId === log.id;

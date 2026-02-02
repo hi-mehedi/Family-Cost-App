@@ -1,7 +1,5 @@
-
 import React, { useState } from 'react';
-import { LogIn, Mail, Lock, ShieldAlert, Info, Database, Globe } from 'lucide-react';
-import { isFirebaseConfigured } from '../firebase';
+import { LogIn, Mail, Lock, ShieldAlert, Database } from 'lucide-react';
 
 interface LoginPageProps {
   onLogin: (email: string, pass: string) => Promise<void>;
@@ -13,14 +11,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const configured = isFirebaseConfigured();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    // Hardcoded restriction as requested
+    // Hardcoded restriction
     if (email !== 'mehedi.admin@gmail.com') {
       setError("Access Denied: Only mehedi.admin@gmail.com permitted.");
       setLoading(false);
@@ -36,14 +32,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     try {
       await onLogin(email, password);
     } catch (err: any) {
-      console.error(err);
-      // If Firebase isn't configured, App.tsx will handle the local login
-      // This catch is for actual Firebase errors if keys ARE provided
-      if (err.code === 'auth/network-request-failed') {
-        setError("Network error. Check your connection.");
-      } else {
-        setError(err.message || "An error occurred during login.");
-      }
+      setError(err.message || "An error occurred during login.");
     } finally {
       setLoading(false);
     }
@@ -61,24 +50,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         </div>
 
         <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-          <div className={`mb-6 p-4 rounded-2xl flex gap-3 items-start border ${configured ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
-            {configured ? (
-              <>
-                <Globe size={20} className="text-emerald-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wider mb-1">Cloud Mode Active</p>
-                  <p className="text-[10px] font-medium text-emerald-700 leading-tight">Connected to Firebase. Data will sync across all devices.</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <Database size={20} className="text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[10px] font-black text-amber-800 uppercase tracking-wider mb-1">Local Mode Active</p>
-                  <p className="text-[10px] font-medium text-amber-700 leading-tight">Firebase keys missing. You can still login to test locally.</p>
-                </div>
-              </>
-            )}
+          <div className="mb-6 p-4 rounded-2xl flex gap-3 items-start border bg-slate-50 border-slate-100">
+            <Database size={20} className="text-indigo-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[10px] font-black text-slate-800 uppercase tracking-wider mb-1">Privacy Focused</p>
+              <p className="text-[10px] font-medium text-slate-600 leading-tight">All data is stored locally on this device. No cloud transmission.</p>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -128,13 +105,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               disabled={loading}
               className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black flex items-center justify-center gap-3 uppercase text-sm tracking-widest shadow-xl shadow-indigo-600/30 active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              {loading ? 'Authenticating...' : 'Enter Admin Panel'}
+              {loading ? 'Validating...' : 'Enter Admin Panel'}
             </button>
           </form>
         </div>
 
         <p className="text-center mt-10 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Secure Multi-Device Sync • v2.0
+          Offline Management System • v2.1
         </p>
       </div>
     </div>

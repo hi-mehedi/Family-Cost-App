@@ -1,40 +1,41 @@
-
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-/**
- * FIREBASE CONFIGURATION
- * To use Cloud Sync on Vercel:
- * 1. Go to Vercel Dashboard > Settings > Environment Variables
- * 2. Add these keys:
- *    VITE_FIREBASE_API_KEY
- *    VITE_FIREBASE_AUTH_DOMAIN
- *    VITE_FIREBASE_PROJECT_ID
- *    VITE_FIREBASE_STORAGE_BUCKET
- *    VITE_FIREBASE_MESSAGING_SENDER_ID
- *    VITE_FIREBASE_APP_ID
- */
-export const firebaseConfig = {
-  apiKey: (import.meta as any).env?.VITE_FIREBASE_API_KEY || "AIzaSyAs-Placeholder-Key",
-  authDomain: (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN || "family-cost-tracker.firebaseapp.com",
-  projectId: (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID || "family-cost-tracker",
-  storageBucket: (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET || "family-cost-tracker.appspot.com",
-  messagingSenderId: (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: (import.meta as any).env?.VITE_FIREBASE_APP_ID || "1:123456789:web:abcdef"
+// Safe environment variable retrieval
+const getEnv = (key: string) => {
+  try {
+    // Check multiple locations for keys
+    const env = (import.meta as any).env || (window as any).process?.env || (typeof process !== 'undefined' ? process.env : {});
+    return env[key];
+  } catch (e) {
+    return undefined;
+  }
 };
 
-// Initialize Firebase only if not already initialized
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+/**
+ * FIREBASE CONFIGURATION
+ */
+export const firebaseConfig = {
+  apiKey: getEnv('VITE_FIREBASE_API_KEY') || "AIzaSyAs-Placeholder-Key",
+  authDomain: getEnv('VITE_FIREBASE_AUTH_DOMAIN') || "family-cost-tracker.firebaseapp.com",
+  projectId: getEnv('VITE_FIREBASE_PROJECT_ID') || "family-cost-tracker",
+  storageBucket: getEnv('VITE_FIREBASE_STORAGE_BUCKET') || "family-cost-tracker.appspot.com",
+  messagingSenderId: getEnv('VITE_FIREBASE_MESSAGING_SENDER_ID') || "123456789",
+  appId: getEnv('VITE_FIREBASE_APP_ID') || "1:123456789:web:abcdef"
+};
+
+// Singleton pattern for Firebase initialization
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
+// Initialize services with the shared app instance
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-/**
- * Utility to check if real credentials are being used.
- * Prevents app crashes if Vercel environment variables aren't set yet.
- */
 export const isFirebaseConfigured = () => {
-  return firebaseConfig.apiKey !== "AIzaSyAs-Placeholder-Key" && 
-         firebaseConfig.apiKey.startsWith("AIza") &&
-         !firebaseConfig.apiKey.includes("Placeholder");
+  const key = firebaseConfig.apiKey;
+  return key && 
+         key !== "AIzaSyAs-Placeholder-Key" && 
+         key.startsWith("AIza") && 
+         !key.includes("Placeholder");
 };

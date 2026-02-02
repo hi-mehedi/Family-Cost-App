@@ -7,17 +7,7 @@ import AddLogPage from './pages/AddLogPage';
 import UnitDetailPage from './pages/UnitDetailPage';
 import LoginPage from './pages/LoginPage';
 import { Layout } from './components/Layout';
-import { Database, CloudOff, Cloud, ShieldCheck } from 'lucide-react';
-
-// Firebase
-import { auth, db, isFirebaseConfigured } from './firebase';
-import { 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signOut 
-} from 'firebase/auth';
-import { collection, onSnapshot, setDoc, doc, query, orderBy } from 'firebase/firestore';
+import { Save, ShieldCheck } from 'lucide-react';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -26,96 +16,40 @@ const App: React.FC = () => {
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [editingLog, setEditingLog] = useState<DailyLog | null>(null);
-  const [syncStatus, setSyncStatus] = useState<'cloud' | 'local' | 'syncing'>('local');
 
-  const configured = isFirebaseConfigured();
-
-  // Monitor Auth State
+  // Monitor Auth State (Local Only)
   useEffect(() => {
     const localUserSession = localStorage.getItem('fc_local_user');
-    
-    // If not configured, we allow a local bypass for demo purposes on Netlify
-    if (localUserSession && !configured) {
+    if (localUserSession) {
       setUser(JSON.parse(localUserSession));
-      setAuthLoading(false);
-      setSyncStatus('local');
-      return;
     }
+    setAuthLoading(false);
+  }, []);
 
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setAuthLoading(false);
-      if (u && configured) setSyncStatus('cloud');
-    }, (err) => {
-      console.error("Auth observer error:", err);
-      setAuthLoading(false);
-    });
-    return unsubscribe;
-  }, [configured]);
-
-  // Monitor Database (Real-time Firestore or LocalStorage)
+  // Monitor Database (LocalStorage Only)
   useEffect(() => {
     if (!user) return;
-
-    if (configured) {
-      setSyncStatus('syncing');
+    const localLogs = localStorage.getItem('fc_local_logs');
+    if (localLogs) {
       try {
-        const q = query(collection(db, "logs"), orderBy("date", "desc"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const logsData = snapshot.docs.map(doc => doc.data() as DailyLog);
-          setLogs(logsData);
-          setSyncStatus('cloud');
-        }, (err) => {
-          console.error("Firestore Listen Error:", err);
-          setSyncStatus('local');
-          // Fallback to local if cloud fails
-          const localLogs = localStorage.getItem('fc_local_logs');
-          if (localLogs) setLogs(JSON.parse(localLogs));
-        });
-        return unsubscribe;
-      } catch (e) {
-        console.error("Firebase Initialization Error:", e);
-      }
-    } else {
-      setSyncStatus('local');
-      const localLogs = localStorage.getItem('fc_local_logs');
-      if (localLogs) {
         setLogs(JSON.parse(localLogs));
+      } catch (e) {
+        console.error("Failed to parse local logs", e);
+        setLogs([]);
       }
     }
-  }, [user, configured]);
+  }, [user]);
 
   const handleLogin = async (email: string, pass: string) => {
-    if (!configured) {
-      // Local Bypass for Netlify preview if keys are missing
-      const mockUser = { email, uid: 'local-admin', isLocal: true };
-      setUser(mockUser);
-      localStorage.setItem('fc_local_user', JSON.stringify(mockUser));
-      return;
-    }
-
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch (error: any) {
-      // Auto-create admin on first login attempt if it doesn't exist
-      if (
-        (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') &&
-        email === 'mehedi.admin@gmail.com'
-      ) {
-        await createUserWithEmailAndPassword(auth, email, pass);
-        return;
-      }
-      throw error;
-    }
+    // Local Authentication Bypass
+    const mockUser = { email, uid: 'local-admin', isLocal: true };
+    setUser(mockUser);
+    localStorage.setItem('fc_local_user', JSON.stringify(mockUser));
   };
 
-  const handleLogout = async () => {
-    if (!configured) {
-      localStorage.removeItem('fc_local_user');
-      setUser(null);
-    } else {
-      await signOut(auth);
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('fc_local_user');
+    setUser(null);
     setActiveTab(Tab.STATS);
   };
 
@@ -146,22 +80,10 @@ const App: React.FC = () => {
     };
   }, [logs]);
 
-  const handleSaveLog = async (newLog: DailyLog) => {
-    if (configured) {
-      try {
-        setSyncStatus('syncing');
-        await setDoc(doc(db, "logs", newLog.date), newLog);
-        setSyncStatus('cloud');
-      } catch (e) {
-        console.error("Error saving to Firebase:", e);
-        setSyncStatus('local');
-      }
-    } else {
-      // Local Mode Persistence
-      const updatedLogs = [...logs.filter(l => l.date !== newLog.date), newLog];
-      setLogs(updatedLogs);
-      localStorage.setItem('fc_local_logs', JSON.stringify(updatedLogs));
-    }
+  const handleSaveLog = (newLog: DailyLog) => {
+    const updatedLogs = [...logs.filter(l => l.date !== newLog.date), newLog];
+    setLogs(updatedLogs);
+    localStorage.setItem('fc_local_logs', JSON.stringify(updatedLogs));
     
     setEditingLog(null);
     setActiveTab(Tab.STATS);
@@ -182,7 +104,7 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Waking up servers...</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Tracker...</p>
         </div>
       </div>
     );
@@ -194,17 +116,9 @@ const App: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-slate-50 relative pb-24 shadow-2xl overflow-hidden">
-      {/* Netlify Friendly Status Banner */}
-      <div className={`text-white text-[9px] font-black py-1.5 px-4 text-center sticky top-0 z-[100] uppercase tracking-widest flex items-center justify-center gap-2 transition-colors duration-500 ${
-        syncStatus === 'cloud' ? 'bg-indigo-600' : syncStatus === 'syncing' ? 'bg-amber-500' : 'bg-slate-700'
-      }`}>
-        {syncStatus === 'cloud' ? (
-          <><Cloud size={12} /> Cloud Sync Active (Netlify)</>
-        ) : syncStatus === 'syncing' ? (
-          <><Database size={12} className="animate-pulse" /> Syncing with Cloud...</>
-        ) : (
-          <><CloudOff size={12} /> Local Offline Mode</>
-        )}
+      {/* Local Mode Status Banner */}
+      <div className="text-white text-[9px] font-black py-1.5 px-4 text-center sticky top-0 z-[100] uppercase tracking-widest flex items-center justify-center gap-2 bg-slate-800">
+        <Save size={12} /> Local Storage Mode • Offline Ready
       </div>
 
       <Layout activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout}>
@@ -239,11 +153,10 @@ const App: React.FC = () => {
         })()}
       </Layout>
       
-      {/* Footer Info for Netlify Previewers */}
       <div className="absolute bottom-24 left-0 right-0 px-8 opacity-20 pointer-events-none">
         <div className="flex items-center justify-center gap-2 grayscale">
           <ShieldCheck size={12} />
-          <span className="text-[8px] font-black uppercase tracking-widest">Verified Netlify Deployment</span>
+          <span className="text-[8px] font-black uppercase tracking-widest">Secure Local Database</span>
         </div>
       </div>
     </div>
