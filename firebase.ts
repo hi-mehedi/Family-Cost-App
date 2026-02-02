@@ -1,41 +1,20 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore"; // Add this line
 
-// Safe environment variable retrieval
-const getEnv = (key: string) => {
-  try {
-    // Check multiple locations for keys
-    const env = (import.meta as any).env || (window as any).process?.env || (typeof process !== 'undefined' ? process.env : {});
-    return env[key];
-  } catch (e) {
-    return undefined;
-  }
+const firebaseConfig = {
+  apiKey: "AIzaSyA861qpuy78qoMt3BR5Lit3tWkugam1tb8",
+  authDomain: "my-familycost.firebaseapp.com",
+  projectId: "my-familycost",
+  storageBucket: "my-familycost.firebasestorage.app",
+  messagingSenderId: "1033739236290",
+  appId: "1:1033739236290:web:af90ca86c7b036e2b09c5b",
+  measurementId: "G-01QVGS5H8H"
 };
 
-/**
- * FIREBASE CONFIGURATION
- */
-export const firebaseConfig = {
-  apiKey: getEnv('VITE_FIREBASE_API_KEY') || "AIzaSyAs-Placeholder-Key",
-  authDomain: getEnv('VITE_FIREBASE_AUTH_DOMAIN') || "family-cost-tracker.firebaseapp.com",
-  projectId: getEnv('VITE_FIREBASE_PROJECT_ID') || "family-cost-tracker",
-  storageBucket: getEnv('VITE_FIREBASE_STORAGE_BUCKET') || "family-cost-tracker.appspot.com",
-  messagingSenderId: getEnv('VITE_FIREBASE_MESSAGING_SENDER_ID') || "123456789",
-  appId: getEnv('VITE_FIREBASE_APP_ID') || "1:123456789:web:abcdef"
-};
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
-// Singleton pattern for Firebase initialization
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-
-// Initialize services with the shared app instance
-export const auth = getAuth(app);
+// Initialize Firestore
 export const db = getFirestore(app);
-
-export const isFirebaseConfigured = () => {
-  const key = firebaseConfig.apiKey;
-  return key && 
-         key !== "AIzaSyAs-Placeholder-Key" && 
-         key.startsWith("AIza") && 
-         !key.includes("Placeholder");
-};
