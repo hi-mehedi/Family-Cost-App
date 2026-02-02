@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, TrendingUp, TrendingDown, ShoppingBasket, Wallet, ChevronRight, LayoutGrid, List, Cloud, ArrowUpRight, ArrowDownRight, User } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, ShoppingBasket, Wallet, ChevronRight, LayoutGrid, List, Cloud, ArrowUpRight, ArrowDownRight, User, ReceiptText } from 'lucide-react';
 import { StatCard } from '../components/StatCard';
 import { DailyLog } from '../types';
 
@@ -46,12 +46,9 @@ const StatsPage: React.FC<StatsPageProps> = ({
     return { income, cost, net: income - cost };
   };
 
-  const bazarByDate = stats.filteredLogs
+  // Filter logs that actually have bazar items and sort by date descending
+  const logsWithBazar = stats.filteredLogs
     .filter(log => log.bazarItems && log.bazarItems.length > 0)
-    .map(log => ({
-      date: log.date,
-      total: log.bazarItems.reduce((sum, item) => sum + (item.price || 0), 0)
-    }))
     .sort((a, b) => b.date.localeCompare(a.date));
 
   const monthNames = [
@@ -201,6 +198,62 @@ const StatsPage: React.FC<StatsPageProps> = ({
           </div>
         </div>
 
+        {/* Detailed Date-Wise Bazar List */}
+        <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-rose-50 text-rose-600 rounded-2xl">
+                <ReceiptText size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">Monthly Bazar Log</h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">Itemized Detail View</p>
+              </div>
+            </div>
+            <div className="bg-rose-600 text-white px-3 py-1.5 rounded-2xl text-[10px] font-black uppercase shadow-lg shadow-rose-200">
+              TK {stats.monthlyBazar.toLocaleString()}
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {logsWithBazar.length > 0 ? logsWithBazar.map((log) => {
+              const dayTotal = log.bazarItems.reduce((sum, item) => sum + (item.price || 0), 0);
+              const dateParts = log.date.split('-');
+              
+              return (
+                <div key={log.id} className="group">
+                  {/* Date Header */}
+                  <div className="flex items-center gap-4 mb-3 px-2">
+                    <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-slate-900 text-white shadow-sm">
+                      <span className="text-[7px] font-black uppercase leading-none mb-0.5">{monthNames[parseInt(dateParts[1]) - 1].substring(0, 3)}</span>
+                      <span className="text-sm font-black leading-none">{dateParts[2]}</span>
+                    </div>
+                    <div className="flex-1 border-b border-slate-100 pb-2 flex justify-between items-end">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{log.date}</span>
+                      <span className="text-xs font-black text-slate-900 tabular-nums">TK {dayTotal.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Items List */}
+                  <div className="ml-14 space-y-2">
+                    {log.bazarItems.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center py-2 px-4 bg-slate-50 rounded-2xl border border-slate-100/50 group-hover:bg-white transition-colors">
+                        <span className="text-[11px] font-black text-slate-700 uppercase tracking-tighter">{item.name}</span>
+                        <span className="text-[10px] font-bold text-rose-600 tabular-nums">TK {item.price.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }) : (
+              <div className="text-center py-16">
+                 <ShoppingBasket size={48} className="mx-auto text-slate-100 mb-4" />
+                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">No Bazar Items Recorded</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Developed By Footer */}
         <div className="pt-8 pb-4 text-center">
             <div className="inline-flex flex-col items-center gap-2">
@@ -210,7 +263,7 @@ const StatsPage: React.FC<StatsPageProps> = ({
                     </div>
                     <span className="text-[9px] font-black text-slate-800 uppercase tracking-widest">Mehedi Hasan Soumik</span>
                 </div>
-                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.3em]">Lead Software Architect</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.3em]">SQA Engineer</p>
             </div>
         </div>
       </div>
