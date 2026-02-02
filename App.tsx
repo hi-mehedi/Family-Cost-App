@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Tab, DailyLog } from './types';
 import { INITIAL_UNITS } from './constants';
@@ -35,7 +34,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const localUserSession = localStorage.getItem('fc_local_user');
     
-    // If not configured, we allow a local bypass for demo purposes on Vercel
+    // If not configured, we allow a local bypass for demo purposes on Netlify
     if (localUserSession && !configured) {
       setUser(JSON.parse(localUserSession));
       setAuthLoading(false);
@@ -88,7 +87,7 @@ const App: React.FC = () => {
 
   const handleLogin = async (email: string, pass: string) => {
     if (!configured) {
-      // Local Bypass for Vercel preview if keys are missing
+      // Local Bypass for Netlify preview if keys are missing
       const mockUser = { email, uid: 'local-admin', isLocal: true };
       setUser(mockUser);
       localStorage.setItem('fc_local_user', JSON.stringify(mockUser));
@@ -195,12 +194,12 @@ const App: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-slate-50 relative pb-24 shadow-2xl overflow-hidden">
-      {/* Vercel Friendly Status Banner */}
+      {/* Netlify Friendly Status Banner */}
       <div className={`text-white text-[9px] font-black py-1.5 px-4 text-center sticky top-0 z-[100] uppercase tracking-widest flex items-center justify-center gap-2 transition-colors duration-500 ${
         syncStatus === 'cloud' ? 'bg-indigo-600' : syncStatus === 'syncing' ? 'bg-amber-500' : 'bg-slate-700'
       }`}>
         {syncStatus === 'cloud' ? (
-          <><Cloud size={12} /> Live Cloud Sync Active</>
+          <><Cloud size={12} /> Cloud Sync Active (Netlify)</>
         ) : syncStatus === 'syncing' ? (
           <><Database size={12} className="animate-pulse" /> Syncing with Cloud...</>
         ) : (
@@ -240,11 +239,11 @@ const App: React.FC = () => {
         })()}
       </Layout>
       
-      {/* Footer Info for Vercel Previewers */}
+      {/* Footer Info for Netlify Previewers */}
       <div className="absolute bottom-24 left-0 right-0 px-8 opacity-20 pointer-events-none">
         <div className="flex items-center justify-center gap-2 grayscale">
           <ShieldCheck size={12} />
-          <span className="text-[8px] font-black uppercase tracking-widest">Verified Vercel Deployment</span>
+          <span className="text-[8px] font-black uppercase tracking-widest">Verified Netlify Deployment</span>
         </div>
       </div>
     </div>
