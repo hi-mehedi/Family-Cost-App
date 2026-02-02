@@ -7,7 +7,10 @@ import AddLogPage from './pages/AddLogPage';
 import UnitDetailPage from './pages/UnitDetailPage';
 import LoginPage from './pages/LoginPage';
 import { Layout } from './components/Layout';
-import { Save, ShieldCheck } from 'lucide-react';
+import { Cloud, Loader2, AlertTriangle } from 'lucide-react';
+import { auth, db } from './firebase';
+import { onAuthStateChanged, signOut, signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, doc, setDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -16,40 +19,53 @@ const App: React.FC = () => {
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [editingLog, setEditingLog] = useState<DailyLog | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Monitor Auth State (Local Only)
+  // Monitor Auth State
   useEffect(() => {
-    const localUserSession = localStorage.getItem('fc_local_user');
-    if (localUserSession) {
-      setUser(JSON.parse(localUserSession));
-    }
-    setAuthLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    }, (err) => {
+      console.error("Auth observer error:", err);
+      setError("Authentication system failure. Check your connection.");
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
-  // Monitor Database (LocalStorage Only)
+  // Monitor Database (Firestore Sync)
   useEffect(() => {
     if (!user) return;
-    const localLogs = localStorage.getItem('fc_local_logs');
-    if (localLogs) {
-      try {
-        setLogs(JSON.parse(localLogs));
-      } catch (e) {
-        console.error("Failed to parse local logs", e);
-        setLogs([]);
-      }
-    }
+    
+    setIsSyncing(true);
+    const q = query(collection(db, 'users', user.uid, 'logs'), orderBy('date', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const syncedLogs = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      } as DailyLog));
+      setLogs(syncedLogs);
+      setIsSyncing(false);
+      setError(null);
+    }, (err) => {
+      console.error("Firestore sync error:", err);
+      setError("Cloud synchronization interrupted.");
+      setIsSyncing(false);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   const handleLogin = async (email: string, pass: string) => {
-    // Local Authentication Bypass
-    const mockUser = { email, uid: 'local-admin', isLocal: true };
-    setUser(mockUser);
-    localStorage.setItem('fc_local_user', JSON.stringify(mockUser));
+    setError(null);
+    await signInWithEmailAndPassword(auth, email, pass);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('fc_local_user');
-    setUser(null);
+  const handleLogout = async () => {
+    await signOut(auth);
+    setLogs([]);
     setActiveTab(Tab.STATS);
   };
 
@@ -57,16 +73,16 @@ const App: React.FC = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayLog = logs.find(log => log.date === today);
     
-    const todayIncome = todayLog?.unitLogs.reduce((acc, curr) => acc + curr.income, 0) || 0;
-    const todayCost = (todayLog?.unitLogs.reduce((acc, curr) => acc + curr.cost, 0) || 0) + 
-                     (todayLog?.bazarItems.reduce((acc, curr) => acc + curr.price, 0) || 0);
+    const todayIncome = todayLog?.unitLogs.reduce((acc, curr) => acc + (curr.income || 0), 0) || 0;
+    const todayCost = (todayLog?.unitLogs.reduce((acc, curr) => acc + (curr.cost || 0), 0) || 0) + 
+                     (todayLog?.bazarItems.reduce((acc, curr) => acc + (curr.price || 0), 0) || 0);
 
     const monthlyIncome = logs.reduce((acc, log) => 
-      acc + log.unitLogs.reduce((uAcc, u) => uAcc + u.income, 0), 0);
+      acc + log.unitLogs.reduce((uAcc, u) => uAcc + (u.income || 0), 0), 0);
     const monthlyUnitCost = logs.reduce((acc, log) => 
-      acc + log.unitLogs.reduce((uAcc, u) => uAcc + u.cost, 0), 0);
+      acc + log.unitLogs.reduce((uAcc, u) => uAcc + (u.cost || 0), 0), 0);
     const monthlyBazar = logs.reduce((acc, log) => 
-      acc + log.bazarItems.reduce((bAcc, b) => bAcc + b.price, 0), 0);
+      acc + log.bazarItems.reduce((bAcc, b) => bAcc + (b.price || 0), 0), 0);
 
     const monthlyCost = monthlyUnitCost + monthlyBazar;
 
@@ -80,13 +96,20 @@ const App: React.FC = () => {
     };
   }, [logs]);
 
-  const handleSaveLog = (newLog: DailyLog) => {
-    const updatedLogs = [...logs.filter(l => l.date !== newLog.date), newLog];
-    setLogs(updatedLogs);
-    localStorage.setItem('fc_local_logs', JSON.stringify(updatedLogs));
-    
-    setEditingLog(null);
-    setActiveTab(Tab.STATS);
+  const handleSaveLog = async (newLog: DailyLog) => {
+    if (!user) return;
+    setIsSyncing(true);
+    try {
+      const logRef = doc(db, 'users', user.uid, 'logs', newLog.date);
+      await setDoc(logRef, newLog);
+      setEditingLog(null);
+      setActiveTab(Tab.STATS);
+    } catch (err) {
+      console.error("Save failed:", err);
+      alert("Failed to save to cloud. Please check your permissions.");
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const startEdit = (log: DailyLog) => {
@@ -102,9 +125,17 @@ const App: React.FC = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Tracker...</p>
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <Loader2 className="animate-spin text-indigo-600" size={48} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-2 h-2 bg-indigo-600 rounded-full animate-ping"></div>
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Verifying Security</p>
+            <p className="text-xs font-bold text-slate-300 mt-1">Connecting to Firebase Cloud...</p>
+          </div>
         </div>
       </div>
     );
@@ -115,10 +146,25 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-slate-50 relative pb-24 shadow-2xl overflow-hidden">
-      {/* Local Mode Status Banner */}
-      <div className="text-white text-[9px] font-black py-1.5 px-4 text-center sticky top-0 z-[100] uppercase tracking-widest flex items-center justify-center gap-2 bg-slate-800">
-        <Save size={12} /> Local Storage Mode • Offline Ready
+    <div className="max-w-md mx-auto min-h-screen bg-slate-50 relative pb-24 shadow-2xl overflow-hidden flex flex-col">
+      {/* Cloud Status Banner */}
+      <div className={`text-white text-[9px] font-black py-2 px-4 text-center sticky top-0 z-[100] uppercase tracking-widest flex items-center justify-center gap-2 transition-colors duration-500 ${error ? 'bg-rose-600' : isSyncing ? 'bg-amber-500' : 'bg-indigo-700'}`}>
+        {error ? (
+          <>
+            <AlertTriangle size={10} />
+            {error}
+          </>
+        ) : isSyncing ? (
+          <>
+            <Loader2 size={10} className="animate-spin" />
+            Synchronizing...
+          </>
+        ) : (
+          <>
+            <Cloud size={10} />
+            Encrypted & Cloud Synced
+          </>
+        )}
       </div>
 
       <Layout activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout}>
@@ -152,13 +198,6 @@ const App: React.FC = () => {
           }
         })()}
       </Layout>
-      
-      <div className="absolute bottom-24 left-0 right-0 px-8 opacity-20 pointer-events-none">
-        <div className="flex items-center justify-center gap-2 grayscale">
-          <ShieldCheck size={12} />
-          <span className="text-[8px] font-black uppercase tracking-widest">Secure Local Database</span>
-        </div>
-      </div>
     </div>
   );
 };

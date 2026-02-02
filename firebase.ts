@@ -1,8 +1,11 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore"; // Add this line
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
-const firebaseConfig = {
+/**
+ * FIREBASE CONFIGURATION (Using your provided keys)
+ */
+export const firebaseConfig = {
   apiKey: "AIzaSyA861qpuy78qoMt3BR5Lit3tWkugam1tb8",
   authDomain: "my-familycost.firebaseapp.com",
   projectId: "my-familycost",
@@ -12,9 +15,11 @@ const firebaseConfig = {
   measurementId: "G-01QVGS5H8H"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+// Singleton pattern for Firebase initialization
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore
+// Initialize services with the shared app instance
+export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+export const isFirebaseConfigured = () => true;

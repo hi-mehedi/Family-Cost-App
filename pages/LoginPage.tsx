@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, Mail, Lock, ShieldAlert, Database } from 'lucide-react';
+import { LogIn, Mail, Lock, ShieldAlert, Cloud } from 'lucide-react';
 
 interface LoginPageProps {
   onLogin: (email: string, pass: string) => Promise<void>;
@@ -16,15 +16,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setLoading(true);
     setError(null);
 
-    // Hardcoded restriction
+    // Enforce admin restriction
     if (email !== 'mehedi.admin@gmail.com') {
-      setError("Access Denied: Only mehedi.admin@gmail.com permitted.");
-      setLoading(false);
-      return;
-    }
-
-    if (password !== '123456') {
-      setError("Invalid password. Please use '123456'.");
+      setError("Unauthorized User: This device is restricted to admin control.");
       setLoading(false);
       return;
     }
@@ -32,7 +26,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     try {
       await onLogin(email, password);
     } catch (err: any) {
-      setError(err.message || "An error occurred during login.");
+      console.error(err);
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+        setError("Invalid credentials. Please use the master admin password.");
+      } else if (err.code === 'auth/user-not-found') {
+        setError("User record not found in cloud project.");
+      } else {
+        setError("Cloud Auth Error: " + (err.message || "Unknown error"));
+      }
     } finally {
       setLoading(false);
     }
@@ -50,11 +51,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         </div>
 
         <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-          <div className="mb-6 p-4 rounded-2xl flex gap-3 items-start border bg-slate-50 border-slate-100">
-            <Database size={20} className="text-indigo-600 shrink-0 mt-0.5" />
+          <div className="mb-6 p-4 rounded-2xl flex gap-3 items-start border bg-indigo-50 border-indigo-100">
+            <Cloud size={20} className="text-indigo-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-[10px] font-black text-slate-800 uppercase tracking-wider mb-1">Privacy Focused</p>
-              <p className="text-[10px] font-medium text-slate-600 leading-tight">All data is stored locally on this device. No cloud transmission.</p>
+              <p className="text-[10px] font-black text-indigo-800 uppercase tracking-wider mb-1">Cloud Protected</p>
+              <p className="text-[10px] font-medium text-slate-600 leading-tight">Your data is securely synced to your private Firebase cloud infrastructure.</p>
             </div>
           </div>
 
@@ -105,13 +106,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               disabled={loading}
               className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black flex items-center justify-center gap-3 uppercase text-sm tracking-widest shadow-xl shadow-indigo-600/30 active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              {loading ? 'Validating...' : 'Enter Admin Panel'}
+              {loading ? 'Authenticating...' : 'Enter Admin Panel'}
             </button>
           </form>
         </div>
 
         <p className="text-center mt-10 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Offline Management System • v2.1
+          Cloud Management System • v3.0
         </p>
       </div>
     </div>
