@@ -22,6 +22,11 @@ const App: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Filter state for Dashboard
+  const now = new Date();
+  const [viewingMonth, setViewingMonth] = useState(now.getMonth());
+  const [viewingYear, setViewingYear] = useState(now.getFullYear());
+
   // Monitor Auth State
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -70,18 +75,25 @@ const App: React.FC = () => {
   };
 
   const stats = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayLog = logs.find(log => log.date === today);
+    // Current BD Date for "Today" stats
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date());
+    const todayLog = logs.find(log => log.date === todayStr);
     
     const todayIncome = todayLog?.unitLogs.reduce((acc, curr) => acc + (curr.income || 0), 0) || 0;
     const todayCost = (todayLog?.unitLogs.reduce((acc, curr) => acc + (curr.cost || 0), 0) || 0) + 
                      (todayLog?.bazarItems.reduce((acc, curr) => acc + (curr.price || 0), 0) || 0);
 
-    const monthlyIncome = logs.reduce((acc, log) => 
+    // Filter logs by selected viewing month/year
+    const filteredLogs = logs.filter(log => {
+      const logDate = new Date(log.date);
+      return logDate.getMonth() === viewingMonth && logDate.getFullYear() === viewingYear;
+    });
+
+    const monthlyIncome = filteredLogs.reduce((acc, log) => 
       acc + log.unitLogs.reduce((uAcc, u) => uAcc + (u.income || 0), 0), 0);
-    const monthlyUnitCost = logs.reduce((acc, log) => 
+    const monthlyUnitCost = filteredLogs.reduce((acc, log) => 
       acc + log.unitLogs.reduce((uAcc, u) => uAcc + (u.cost || 0), 0), 0);
-    const monthlyBazar = logs.reduce((acc, log) => 
+    const monthlyBazar = filteredLogs.reduce((acc, log) => 
       acc + log.bazarItems.reduce((bAcc, b) => bAcc + (b.price || 0), 0), 0);
 
     const monthlyCost = monthlyUnitCost + monthlyBazar;
@@ -92,9 +104,10 @@ const App: React.FC = () => {
       monthlyIncome,
       monthlyCost,
       monthlyBazar,
-      monthBalance: monthlyIncome - monthlyCost
+      monthBalance: monthlyIncome - monthlyCost,
+      filteredLogs // Pass filtered logs to stats page for unit calculations
     };
-  }, [logs]);
+  }, [logs, viewingMonth, viewingYear]);
 
   const handleSaveLog = async (newLog: DailyLog) => {
     if (!user) return;
@@ -171,7 +184,18 @@ const App: React.FC = () => {
         {(() => {
           switch (activeTab) {
             case Tab.STATS:
-              return <StatsPage stats={stats} units={INITIAL_UNITS} logs={logs} onUnitClick={openUnitDetail} />;
+              return (
+                <StatsPage 
+                  stats={stats} 
+                  units={INITIAL_UNITS} 
+                  logs={logs} 
+                  onUnitClick={openUnitDetail} 
+                  viewingMonth={viewingMonth}
+                  viewingYear={viewingYear}
+                  setViewingMonth={setViewingMonth}
+                  setViewingYear={setViewingYear}
+                />
+              );
             case Tab.HISTORY:
               return <HistoryPage logs={logs} onEdit={startEdit} />;
             case Tab.ADD:
@@ -194,7 +218,16 @@ const App: React.FC = () => {
                 />
               ) : null;
             default:
-              return <StatsPage stats={stats} units={INITIAL_UNITS} logs={logs} onUnitClick={openUnitDetail} />;
+              return <StatsPage 
+                stats={stats} 
+                units={INITIAL_UNITS} 
+                logs={logs} 
+                onUnitClick={openUnitDetail} 
+                viewingMonth={viewingMonth}
+                viewingYear={viewingYear}
+                setViewingMonth={setViewingMonth}
+                setViewingYear={setViewingYear}
+              />;
           }
         })()}
       </Layout>

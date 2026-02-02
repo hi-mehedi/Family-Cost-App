@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ShoppingBasket, Save, Plus, Trash2, X, AlertCircle } from 'lucide-react';
 import { DailyLog, UnitLog, BazarItem } from '../types';
@@ -12,7 +11,17 @@ interface AddLogPageProps {
 }
 
 const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCancel, existingLogs }) => {
-  const [date, setDate] = useState(editingLog?.date || new Date().toISOString().split('T')[0]);
+  // Use Bangladesh Time for default date
+  const getBDDate = () => {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Dhaka',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  };
+
+  const [date, setDate] = useState(editingLog?.date || getBDDate());
   const [unitLogs, setUnitLogs] = useState<UnitLog[]>(
     units.map(u => ({ unitId: u, unitName: u, income: 0, cost: 0 }))
   );
@@ -78,8 +87,8 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
           <h2 className="text-2xl font-black text-white italic">
             {isAutoLoaded ? 'UPDATE ENTRY' : 'NEW ENTRY'}
           </h2>
-          <p className="text-indigo-200 text-xs font-medium mt-1 uppercase tracking-widest">
-            {isAutoLoaded ? 'Updating existing date record' : 'Create new daily record'}
+          <p className="text-indigo-200 text-[10px] font-bold mt-1 uppercase tracking-[0.2em]">
+            Timezone: Asia/Dhaka (GMT+6)
           </p>
         </div>
         {(editingLog || isAutoLoaded) && (
@@ -92,7 +101,7 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
       <div className="px-4 -mt-6">
         {/* Date Selector */}
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-6">
-          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Select Date</h3>
+          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Transaction Date</h3>
           <div className="relative">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-indigo-600">
                <CalendarIcon size={20} />
@@ -107,12 +116,12 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
           {isAutoLoaded && (
             <div className="mt-3 flex items-center gap-2 text-indigo-700 bg-indigo-50 px-3 py-2 rounded-xl border border-indigo-100">
               <AlertCircle size={14} />
-              <p className="text-[10px] font-bold uppercase">Record found! Update the numbers below to sum.</p>
+              <p className="text-[10px] font-bold uppercase tracking-tight">Existing record detected. Values are auto-populated.</p>
             </div>
           )}
         </div>
 
-        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Daily Fleet Data</h3>
+        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Unit Performance Data</h3>
         
         <div className="space-y-4 mb-8">
           {units.map((unit) => {
@@ -120,8 +129,8 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
             return (
               <div key={unit} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-1 bg-indigo-500 h-6 rounded-full"></div>
-                  <h4 className="text-lg font-black text-slate-900">{unit}</h4>
+                  <div className="w-1.5 bg-indigo-500 h-6 rounded-full"></div>
+                  <h4 className="text-lg font-black text-slate-900 tracking-tight">{unit}</h4>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -139,7 +148,7 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
                     </div>
                   </div>
                   <div>
-                    <span className="block text-[10px] font-black text-rose-600 uppercase mb-2">Cost</span>
+                    <span className="block text-[10px] font-black text-rose-600 uppercase mb-2">Expense</span>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">TK</span>
                       <input 
@@ -158,13 +167,15 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
         </div>
 
         {/* Bazar Section */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-8">
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-12">
           <div className="flex justify-between items-center mb-6">
              <div className="flex items-center gap-3">
-               <ShoppingBasket size={22} className="text-rose-600" />
-               <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Daily Bazar Items</h4>
+               <div className="p-2 bg-rose-50 rounded-xl">
+                <ShoppingBasket size={22} className="text-rose-600" />
+               </div>
+               <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Bazar List</h4>
              </div>
-             <div className="bg-rose-50 text-rose-600 px-3 py-1 rounded-lg font-black text-sm">
+             <div className="bg-slate-900 text-white px-4 py-2 rounded-2xl font-black text-sm shadow-lg shadow-slate-200">
                TK {totalBazarPrice.toLocaleString()}
              </div>
           </div>
@@ -175,10 +186,10 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
                  {bazarItems.map((item) => (
                    <div key={item.id} className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
                       <div>
-                        <span className="block text-sm font-black text-slate-900">{item.name}</span>
-                        <span className="text-[11px] font-bold text-slate-600 uppercase">Cost: TK {item.price.toLocaleString()}</span>
+                        <span className="block text-sm font-black text-slate-900 uppercase tracking-tighter">{item.name}</span>
+                        <span className="text-[11px] font-bold text-slate-500 uppercase">Cost: TK {item.price.toLocaleString()}</span>
                       </div>
-                      <button onClick={() => removeBazarItem(item.id)} className="bg-white p-2 rounded-xl text-rose-500 shadow-sm border border-slate-100">
+                      <button onClick={() => removeBazarItem(item.id)} className="bg-white p-2 rounded-xl text-rose-500 shadow-sm border border-slate-100 active:scale-90 transition-transform">
                         <Trash2 size={18} />
                       </button>
                    </div>
@@ -189,7 +200,7 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
             <div className="flex gap-2">
               <input 
                 type="text"
-                placeholder="Item Name"
+                placeholder="Item"
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
                 className="flex-[2] bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -212,11 +223,15 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
 
           <button 
             onClick={handleSave}
-            className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black flex items-center justify-center gap-3 uppercase text-sm tracking-widest shadow-xl shadow-indigo-600/30 active:scale-[0.98] transition-all"
+            className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black flex items-center justify-center gap-3 uppercase text-sm tracking-widest shadow-xl shadow-slate-900/20 active:scale-[0.98] transition-all"
           >
             <Save size={20} />
-            {isAutoLoaded ? 'Update Daily Totals' : 'Save Record'}
+            {isAutoLoaded ? 'Update Entry' : 'Post to Cloud'}
           </button>
+        </div>
+        
+        <div className="text-center py-4">
+           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Secured by Mehedi Hasan Soumik</p>
         </div>
       </div>
     </div>

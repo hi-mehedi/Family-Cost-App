@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, ListOrdered, Plus, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, ListOrdered, Plus, LogOut, User, Cpu } from 'lucide-react';
 import { Tab } from '../types';
 
 interface LayoutProps {
@@ -15,12 +15,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       {/* Premium Header */}
       <header className="bg-white border-b border-slate-100 px-6 py-4 flex justify-between items-center sticky top-0 z-50 glass">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-            <LayoutDashboard size={18} strokeWidth={2.5} />
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+            <Cpu size={20} strokeWidth={2.5} />
           </div>
           <div>
             <h1 className="text-lg font-black text-slate-800 italic tracking-tighter leading-tight">Family Cost</h1>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Management v3</p>
+            <div className="flex items-center gap-1.5">
+               <span className="text-[7px] font-black bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded uppercase tracking-widest">v3.0</span>
+               <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">By Mehedi Hasan Soumik</p>
+            </div>
           </div>
         </div>
         <button 

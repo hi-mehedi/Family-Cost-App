@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, TrendingUp, TrendingDown, ShoppingBasket, Wallet, ChevronRight, LayoutGrid, List, Cloud, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, ShoppingBasket, Wallet, ChevronRight, LayoutGrid, List, Cloud, ArrowUpRight, ArrowDownRight, User } from 'lucide-react';
 import { StatCard } from '../components/StatCard';
 import { DailyLog } from '../types';
 
@@ -11,18 +11,32 @@ interface StatsPageProps {
     monthlyCost: number;
     monthlyBazar: number;
     monthBalance: number;
+    filteredLogs: DailyLog[];
   };
   units: string[];
   logs: DailyLog[];
   onUnitClick: (unitName: string) => void;
+  viewingMonth: number;
+  viewingYear: number;
+  setViewingMonth: (month: number) => void;
+  setViewingYear: (year: number) => void;
 }
 
-const StatsPage: React.FC<StatsPageProps> = ({ stats, units, logs, onUnitClick }) => {
+const StatsPage: React.FC<StatsPageProps> = ({ 
+  stats, 
+  units, 
+  logs, 
+  onUnitClick,
+  viewingMonth,
+  viewingYear,
+  setViewingMonth,
+  setViewingYear
+}) => {
   
   const getUnitTotals = (unitName: string) => {
     let income = 0;
     let cost = 0;
-    logs.forEach(log => {
+    stats.filteredLogs.forEach(log => {
       const uLog = log.unitLogs.find(ul => ul.unitName === unitName);
       if (uLog) {
         income += (uLog.income || 0);
@@ -32,7 +46,7 @@ const StatsPage: React.FC<StatsPageProps> = ({ stats, units, logs, onUnitClick }
     return { income, cost, net: income - cost };
   };
 
-  const bazarByDate = logs
+  const bazarByDate = stats.filteredLogs
     .filter(log => log.bazarItems && log.bazarItems.length > 0)
     .map(log => ({
       date: log.date,
@@ -40,10 +54,15 @@ const StatsPage: React.FC<StatsPageProps> = ({ stats, units, logs, onUnitClick }
     }))
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  const currentMonth = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date());
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   return (
-    <div className="pb-12 bg-slate-50">
+    <div className="pb-24 bg-slate-50">
       {/* Dynamic Header Section */}
       <div className="bg-indigo-600 px-6 pt-10 pb-16 relative overflow-hidden">
         <div className="relative z-10 flex justify-between items-start">
@@ -53,11 +72,28 @@ const StatsPage: React.FC<StatsPageProps> = ({ stats, units, logs, onUnitClick }
             </h2>
             <div className="flex items-center gap-2 mt-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-[0.2em]">Active Cloud Node: BOS-01</p>
+              <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-[0.2em]">Live Financial Node</p>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/20">
-             <LayoutGrid size={20} className="text-white" />
+          <div className="flex flex-col gap-2">
+            <select 
+              value={viewingMonth} 
+              onChange={(e) => setViewingMonth(parseInt(e.target.value))}
+              className="bg-white/10 backdrop-blur-md text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl border border-white/20 focus:outline-none appearance-none cursor-pointer"
+            >
+              {monthNames.map((name, idx) => (
+                <option key={name} value={idx} className="text-slate-900">{name}</option>
+              ))}
+            </select>
+            <select 
+              value={viewingYear} 
+              onChange={(e) => setViewingYear(parseInt(e.target.value))}
+              className="bg-white/10 backdrop-blur-md text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl border border-white/20 focus:outline-none appearance-none cursor-pointer"
+            >
+              {years.map(y => (
+                <option key={y} value={y} className="text-slate-900">{y}</option>
+              ))}
+            </select>
           </div>
         </div>
         
@@ -71,10 +107,10 @@ const StatsPage: React.FC<StatsPageProps> = ({ stats, units, logs, onUnitClick }
         <div className="bg-slate-900 rounded-[2.5rem] p-6 shadow-2xl shadow-indigo-200 relative overflow-hidden border border-slate-800">
            <div className="relative z-10">
               <div className="flex justify-between items-center mb-6">
-                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Net Capital Balance</span>
+                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Net Monthly Balance</span>
                  <div className="bg-slate-800 px-3 py-1 rounded-full flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                    <span className="text-[9px] font-bold text-slate-300 uppercase">{currentMonth}</span>
+                    <span className="text-[9px] font-bold text-slate-300 uppercase">{monthNames[viewingMonth]} {viewingYear}</span>
                  </div>
               </div>
               <div className="flex items-baseline gap-2 mb-8">
@@ -87,14 +123,14 @@ const StatsPage: React.FC<StatsPageProps> = ({ stats, units, logs, onUnitClick }
                  <div className="bg-slate-800/50 rounded-3xl p-4 border border-slate-700/50">
                     <div className="flex items-center gap-2 mb-2">
                        <ArrowUpRight size={14} className="text-emerald-400" />
-                       <span className="text-[9px] font-bold text-slate-400 uppercase">Monthly In</span>
+                       <span className="text-[9px] font-bold text-slate-400 uppercase">Total In</span>
                     </div>
                     <span className="text-lg font-black text-white">TK {stats.monthlyIncome.toLocaleString()}</span>
                  </div>
                  <div className="bg-slate-800/50 rounded-3xl p-4 border border-slate-700/50">
                     <div className="flex items-center gap-2 mb-2">
                        <ArrowDownRight size={14} className="text-rose-400" />
-                       <span className="text-[9px] font-bold text-slate-400 uppercase">Monthly Out</span>
+                       <span className="text-[9px] font-bold text-slate-400 uppercase">Total Out</span>
                     </div>
                     <span className="text-lg font-black text-white">TK {stats.monthlyCost.toLocaleString()}</span>
                  </div>
@@ -106,11 +142,11 @@ const StatsPage: React.FC<StatsPageProps> = ({ stats, units, logs, onUnitClick }
 
         {/* Stats Grid */}
         <div>
-          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-2">Daily Quick Stats</h3>
+          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-2">Daily Quick Summary</h3>
           <div className="grid grid-cols-2 gap-4">
             <StatCard title="Today Income" value={stats.todayIncome} icon={<TrendingUp size={18} />} iconBg="bg-emerald-50 text-emerald-600" valueColor="text-emerald-600" />
             <StatCard title="Today Cost" value={stats.todayCost} icon={<TrendingDown size={18} />} iconBg="bg-rose-50 text-rose-600" valueColor="text-rose-600" />
-            <StatCard title="Monthly Bazar" value={stats.monthlyBazar} icon={<ShoppingBasket size={18} />} iconBg="bg-orange-50 text-orange-600" valueColor="text-orange-600" />
+            <StatCard title="Bazar Total" value={stats.monthlyBazar} icon={<ShoppingBasket size={18} />} iconBg="bg-orange-50 text-orange-600" valueColor="text-orange-600" />
             <StatCard title="Remaining" value={stats.monthBalance} icon={<Wallet size={18} />} iconBg="bg-indigo-50 text-indigo-600" valueColor="text-indigo-600" />
           </div>
         </div>
@@ -123,8 +159,8 @@ const StatsPage: React.FC<StatsPageProps> = ({ stats, units, logs, onUnitClick }
                 <LayoutGrid size={20} />
               </div>
               <div>
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">Unit Summaries</h3>
-                <p className="text-[9px] font-bold text-slate-400 uppercase">Real-time Node Status</p>
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">Unit Fleet Breakdown</h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">Filtered for {monthNames[viewingMonth]}</p>
               </div>
             </div>
           </div>
@@ -152,7 +188,7 @@ const StatsPage: React.FC<StatsPageProps> = ({ stats, units, logs, onUnitClick }
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                       <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Net Profit</span>
+                       <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Profit</span>
                        <span className={`text-sm font-black tabular-nums ${net >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
                           {net >= 0 ? '+' : ''}{net.toLocaleString()}
                        </span>
@@ -165,37 +201,17 @@ const StatsPage: React.FC<StatsPageProps> = ({ stats, units, logs, onUnitClick }
           </div>
         </div>
 
-        {/* Recent Bazar List */}
-        <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 mb-6">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="p-2.5 bg-rose-50 text-rose-600 rounded-2xl">
-              <List size={20} />
-            </div>
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">Recent Bazar Activity</h3>
-          </div>
-
-          <div className="space-y-4">
-            {bazarByDate.length > 0 ? bazarByDate.slice(0, 5).map((b, idx) => (
-              <div key={idx} className="flex justify-between items-center p-5 bg-slate-50/50 rounded-3xl border border-slate-100/50">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex flex-col items-center justify-center">
-                    <span className="text-[8px] font-black text-slate-400 uppercase">{b.date.split('-')[1]}</span>
-                    <span className="text-xs font-black text-slate-700">{b.date.split('-')[2]}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-black text-slate-500 uppercase">{b.date}</span>
-                    <span className="text-xs font-bold text-slate-900">Total Purchase</span>
-                  </div>
+        {/* Developed By Footer */}
+        <div className="pt-8 pb-4 text-center">
+            <div className="inline-flex flex-col items-center gap-2">
+                <div className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                    <div className="w-6 h-6 bg-slate-800 rounded-lg flex items-center justify-center text-white">
+                        <User size={14} />
+                    </div>
+                    <span className="text-[9px] font-black text-slate-800 uppercase tracking-widest">Mehedi Hasan Soumik</span>
                 </div>
-                <span className="text-sm font-black text-rose-600 tabular-nums">TK {b.total.toLocaleString()}</span>
-              </div>
-            )) : (
-              <div className="text-center py-10">
-                 <ShoppingBasket size={32} className="mx-auto text-slate-200 mb-3" />
-                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">No Bazar Data Records</p>
-              </div>
-            )}
-          </div>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.3em]">Lead Software Architect</p>
+            </div>
         </div>
       </div>
     </div>
