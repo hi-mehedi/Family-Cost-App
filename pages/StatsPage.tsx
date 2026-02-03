@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, TrendingUp, TrendingDown, ShoppingBasket, Wallet, ChevronRight, LayoutGrid, List, Cloud, ArrowUpRight, ArrowDownRight, User, ReceiptText } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, ShoppingBasket, Wallet, ChevronRight, LayoutGrid, List, Cloud, ArrowUpRight, ArrowDownRight, User, ReceiptText, ListPlus } from 'lucide-react';
 import { StatCard } from '../components/StatCard';
 import { DailyLog } from '../types';
 
@@ -10,6 +10,7 @@ interface StatsPageProps {
     monthlyIncome: number;
     monthlyCost: number;
     monthlyBazar: number;
+    monthlyOther: number;
     monthBalance: number;
     filteredLogs: DailyLog[];
   };
@@ -46,9 +47,12 @@ const StatsPage: React.FC<StatsPageProps> = ({
     return { income, cost, net: income - cost };
   };
 
-  // Filter logs that actually have bazar items and sort by date descending
   const logsWithBazar = stats.filteredLogs
     .filter(log => log.bazarItems && log.bazarItems.length > 0)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  const logsWithOther = stats.filteredLogs
+    .filter(log => log.otherItems && log.otherItems.length > 0)
     .sort((a, b) => b.date.localeCompare(a.date));
 
   const monthNames = [
@@ -120,14 +124,14 @@ const StatsPage: React.FC<StatsPageProps> = ({
                  <div className="bg-slate-800/50 rounded-3xl p-4 border border-slate-700/50">
                     <div className="flex items-center gap-2 mb-2">
                        <ArrowUpRight size={14} className="text-emerald-400" />
-                       <span className="text-[9px] font-bold text-slate-400 uppercase">Total In</span>
+                       <span className="text-[9px] font-bold text-slate-400 uppercase">Total In (Inc. Bldg)</span>
                     </div>
                     <span className="text-lg font-black text-white">TK {stats.monthlyIncome.toLocaleString()}</span>
                  </div>
                  <div className="bg-slate-800/50 rounded-3xl p-4 border border-slate-700/50">
                     <div className="flex items-center gap-2 mb-2">
                        <ArrowDownRight size={14} className="text-rose-400" />
-                       <span className="text-[9px] font-bold text-slate-400 uppercase">Total Out</span>
+                       <span className="text-[9px] font-bold text-slate-400 uppercase">Total Out (All)</span>
                     </div>
                     <span className="text-lg font-black text-white">TK {stats.monthlyCost.toLocaleString()}</span>
                  </div>
@@ -144,7 +148,7 @@ const StatsPage: React.FC<StatsPageProps> = ({
             <StatCard title="Today Income" value={stats.todayIncome} icon={<TrendingUp size={18} />} iconBg="bg-emerald-50 text-emerald-600" valueColor="text-emerald-600" />
             <StatCard title="Today Cost" value={stats.todayCost} icon={<TrendingDown size={18} />} iconBg="bg-rose-50 text-rose-600" valueColor="text-rose-600" />
             <StatCard title="Bazar Total" value={stats.monthlyBazar} icon={<ShoppingBasket size={18} />} iconBg="bg-orange-50 text-orange-600" valueColor="text-orange-600" />
-            <StatCard title="Remaining" value={stats.monthBalance} icon={<Wallet size={18} />} iconBg="bg-indigo-50 text-indigo-600" valueColor="text-indigo-600" />
+            <StatCard title="Other Total" value={stats.monthlyOther} icon={<ListPlus size={18} />} iconBg="bg-amber-50 text-amber-600" valueColor="text-amber-600" />
           </div>
         </div>
 
@@ -202,7 +206,7 @@ const StatsPage: React.FC<StatsPageProps> = ({
         <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-rose-50 text-rose-600 rounded-2xl">
+              <div className="p-2.5 bg-orange-50 text-orange-600 rounded-2xl">
                 <ReceiptText size={20} />
               </div>
               <div>
@@ -210,7 +214,7 @@ const StatsPage: React.FC<StatsPageProps> = ({
                 <p className="text-[9px] font-bold text-slate-400 uppercase">Itemized Detail View</p>
               </div>
             </div>
-            <div className="bg-rose-600 text-white px-3 py-1.5 rounded-2xl text-[10px] font-black uppercase shadow-lg shadow-rose-200">
+            <div className="bg-orange-600 text-white px-3 py-1.5 rounded-2xl text-[10px] font-black uppercase shadow-lg shadow-orange-200">
               TK {stats.monthlyBazar.toLocaleString()}
             </div>
           </div>
@@ -222,7 +226,6 @@ const StatsPage: React.FC<StatsPageProps> = ({
               
               return (
                 <div key={log.id} className="group">
-                  {/* Date Header */}
                   <div className="flex items-center gap-4 mb-3 px-2">
                     <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-slate-900 text-white shadow-sm">
                       <span className="text-[7px] font-black uppercase leading-none mb-0.5">{monthNames[parseInt(dateParts[1]) - 1].substring(0, 3)}</span>
@@ -233,22 +236,71 @@ const StatsPage: React.FC<StatsPageProps> = ({
                       <span className="text-xs font-black text-slate-900 tabular-nums">TK {dayTotal.toLocaleString()}</span>
                     </div>
                   </div>
-
-                  {/* Items List */}
                   <div className="ml-14 space-y-2">
                     {log.bazarItems.map((item, idx) => (
                       <div key={idx} className="flex justify-between items-center py-2 px-4 bg-slate-50 rounded-2xl border border-slate-100/50 group-hover:bg-white transition-colors">
                         <span className="text-[11px] font-black text-slate-700 uppercase tracking-tighter">{item.name}</span>
-                        <span className="text-[10px] font-bold text-rose-600 tabular-nums">TK {item.price.toLocaleString()}</span>
+                        <span className="text-[10px] font-bold text-orange-600 tabular-nums">TK {item.price.toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               );
             }) : (
-              <div className="text-center py-16">
-                 <ShoppingBasket size={48} className="mx-auto text-slate-100 mb-4" />
+              <div className="text-center py-10">
                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">No Bazar Items Recorded</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Detailed Date-Wise Other List */}
+        <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-50 text-amber-600 rounded-2xl">
+                <ListPlus size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">Monthly Other Details Log</h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">Itemized Detail View</p>
+              </div>
+            </div>
+            <div className="bg-amber-600 text-white px-3 py-1.5 rounded-2xl text-[10px] font-black uppercase shadow-lg shadow-amber-200">
+              TK {stats.monthlyOther.toLocaleString()}
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {logsWithOther.length > 0 ? logsWithOther.map((log) => {
+              const dayTotal = (log.otherItems || []).reduce((sum, item) => sum + (item.price || 0), 0);
+              const dateParts = log.date.split('-');
+              
+              return (
+                <div key={log.id} className="group">
+                  <div className="flex items-center gap-4 mb-3 px-2">
+                    <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-slate-800 text-white shadow-sm">
+                      <span className="text-[7px] font-black uppercase leading-none mb-0.5">{monthNames[parseInt(dateParts[1]) - 1].substring(0, 3)}</span>
+                      <span className="text-sm font-black leading-none">{dateParts[2]}</span>
+                    </div>
+                    <div className="flex-1 border-b border-slate-100 pb-2 flex justify-between items-end">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{log.date}</span>
+                      <span className="text-xs font-black text-slate-900 tabular-nums">TK {dayTotal.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <div className="ml-14 space-y-2">
+                    {(log.otherItems || []).map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center py-2 px-4 bg-amber-50/30 rounded-2xl border border-amber-100/50 group-hover:bg-white transition-colors">
+                        <span className="text-[11px] font-black text-slate-700 uppercase tracking-tighter">{item.name}</span>
+                        <span className="text-[10px] font-bold text-amber-700 tabular-nums">TK {item.price.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }) : (
+              <div className="text-center py-10">
+                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">No Other Details Recorded</p>
               </div>
             )}
           </div>

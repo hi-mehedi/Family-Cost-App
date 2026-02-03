@@ -79,9 +79,13 @@ const App: React.FC = () => {
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date());
     const todayLog = logs.find(log => log.date === todayStr);
     
-    const todayIncome = todayLog?.unitLogs.reduce((acc, curr) => acc + (curr.income || 0), 0) || 0;
+    const todayUnitIncome = todayLog?.unitLogs.reduce((acc, curr) => acc + (curr.income || 0), 0) || 0;
+    const todayBuildingIncome = todayLog?.buildingIncome || 0;
+    const todayIncome = todayUnitIncome + todayBuildingIncome;
+
     const todayCost = (todayLog?.unitLogs.reduce((acc, curr) => acc + (curr.cost || 0), 0) || 0) + 
-                     (todayLog?.bazarItems.reduce((acc, curr) => acc + (curr.price || 0), 0) || 0);
+                     (todayLog?.bazarItems.reduce((acc, curr) => acc + (curr.price || 0), 0) || 0) +
+                     (todayLog?.otherItems?.reduce((acc, curr) => acc + (curr.price || 0), 0) || 0);
 
     // Filter logs by selected viewing month/year
     const filteredLogs = logs.filter(log => {
@@ -89,14 +93,19 @@ const App: React.FC = () => {
       return logDate.getMonth() === viewingMonth && logDate.getFullYear() === viewingYear;
     });
 
-    const monthlyIncome = filteredLogs.reduce((acc, log) => 
+    const monthlyUnitIncome = filteredLogs.reduce((acc, log) => 
       acc + log.unitLogs.reduce((uAcc, u) => uAcc + (u.income || 0), 0), 0);
+    const monthlyBuildingIncome = filteredLogs.reduce((acc, log) => acc + (log.buildingIncome || 0), 0);
+    const monthlyIncome = monthlyUnitIncome + monthlyBuildingIncome;
+
     const monthlyUnitCost = filteredLogs.reduce((acc, log) => 
       acc + log.unitLogs.reduce((uAcc, u) => uAcc + (u.cost || 0), 0), 0);
     const monthlyBazar = filteredLogs.reduce((acc, log) => 
       acc + log.bazarItems.reduce((bAcc, b) => bAcc + (b.price || 0), 0), 0);
+    const monthlyOther = filteredLogs.reduce((acc, log) => 
+      acc + (log.otherItems?.reduce((oAcc, o) => oAcc + (o.price || 0), 0) || 0), 0);
 
-    const monthlyCost = monthlyUnitCost + monthlyBazar;
+    const monthlyCost = monthlyUnitCost + monthlyBazar + monthlyOther;
 
     return {
       todayIncome,
@@ -104,8 +113,9 @@ const App: React.FC = () => {
       monthlyIncome,
       monthlyCost,
       monthlyBazar,
+      monthlyOther,
       monthBalance: monthlyIncome - monthlyCost,
-      filteredLogs // Pass filtered logs to stats page for unit calculations
+      filteredLogs 
     };
   }, [logs, viewingMonth, viewingYear]);
 

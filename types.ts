@@ -1,5 +1,10 @@
-
 export interface BazarItem {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface OtherItem {
   id: string;
   name: string;
   price: number;
@@ -17,6 +22,8 @@ export interface DailyLog {
   date: string; // ISO format
   unitLogs: UnitLog[];
   bazarItems: BazarItem[];
+  otherItems: OtherItem[]; // New field for miscellaneous costs
+  buildingIncome: number; // New field for building-specific income
 }
 
 export interface AppState {

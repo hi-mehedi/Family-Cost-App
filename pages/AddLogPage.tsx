@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ShoppingBasket, Save, Plus, Trash2, X, AlertCircle } from 'lucide-react';
-import { DailyLog, UnitLog, BazarItem } from '../types';
+import { Calendar as CalendarIcon, ShoppingBasket, Save, Plus, Trash2, X, AlertCircle, Home, ListPlus } from 'lucide-react';
+import { DailyLog, UnitLog, BazarItem, OtherItem } from '../types';
 
 interface AddLogPageProps {
   onSave: (log: DailyLog) => void;
@@ -11,7 +11,6 @@ interface AddLogPageProps {
 }
 
 const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCancel, existingLogs }) => {
-  // Use Bangladesh Time for default date
   const getBDDate = () => {
     return new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Dhaka',
@@ -25,17 +24,27 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
   const [unitLogs, setUnitLogs] = useState<UnitLog[]>(
     units.map(u => ({ unitId: u, unitName: u, income: 0, cost: 0 }))
   );
+  const [buildingIncome, setBuildingIncome] = useState<string>(editingLog?.buildingIncome?.toString() || '0');
+  
+  // Bazar Items State
   const [bazarItems, setBazarItems] = useState<BazarItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
+
+  // Other Items State
+  const [otherItems, setOtherItems] = useState<OtherItem[]>([]);
+  const [newOtherName, setNewOtherName] = useState('');
+  const [newOtherPrice, setNewOtherPrice] = useState('');
+
   const [isAutoLoaded, setIsAutoLoaded] = useState(false);
 
-  // Auto-load data if the user selects a date that already has records
   useEffect(() => {
     const existingEntry = editingLog || existingLogs.find(l => l.date === date);
 
     if (existingEntry) {
       setBazarItems([...existingEntry.bazarItems]);
+      setOtherItems([...(existingEntry.otherItems || [])]);
+      setBuildingIncome(existingEntry.buildingIncome?.toString() || '0');
       setUnitLogs(units.map(u => {
         const found = existingEntry.unitLogs.find(ul => ul.unitName === u);
         return found ? { ...found } : { unitId: u, unitName: u, income: 0, cost: 0 };
@@ -43,6 +52,8 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
       setIsAutoLoaded(true);
     } else {
       setBazarItems([]);
+      setOtherItems([]);
+      setBuildingIncome('0');
       setUnitLogs(units.map(u => ({ unitId: u, unitName: u, income: 0, cost: 0 })));
       setIsAutoLoaded(false);
     }
@@ -65,23 +76,42 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
     }
   };
 
+  const addOtherItem = () => {
+    if (newOtherName && newOtherPrice) {
+      setOtherItems(prev => [...prev, {
+        id: Math.random().toString(36).substr(2, 9),
+        name: newOtherName,
+        price: parseInt(newOtherPrice) || 0
+      }]);
+      setNewOtherName('');
+      setNewOtherPrice('');
+    }
+  };
+
   const removeBazarItem = (id: string) => {
     setBazarItems(prev => prev.filter(item => item.id !== id));
   };
 
+  const removeOtherItem = (id: string) => {
+    setOtherItems(prev => prev.filter(item => item.id !== id));
+  };
+
   const totalBazarPrice = bazarItems.reduce((acc, curr) => acc + curr.price, 0);
+  const totalOtherPrice = otherItems.reduce((acc, curr) => acc + curr.price, 0);
 
   const handleSave = () => {
     onSave({
       id: editingLog?.id || Math.random().toString(36).substr(2, 9),
       date,
       unitLogs: unitLogs.filter(ul => ul.income > 0 || ul.cost > 0),
-      bazarItems
+      buildingIncome: parseInt(buildingIncome) || 0,
+      bazarItems,
+      otherItems
     });
   };
 
   return (
-    <div className="pb-10">
+    <div className="pb-24">
       <div className="bg-indigo-600 px-6 py-10 relative overflow-hidden flex justify-between items-start">
         <div>
           <h2 className="text-2xl font-black text-white italic">
@@ -119,6 +149,26 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
               <p className="text-[10px] font-bold uppercase tracking-tight">Existing record detected. Values are auto-populated.</p>
             </div>
           )}
+        </div>
+
+        {/* Building Income Section */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-indigo-50 rounded-xl">
+              <Home size={22} className="text-indigo-600" />
+            </div>
+            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Building Income</h4>
+          </div>
+          <div className="relative">
+             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">TK</span>
+             <input 
+               type="number"
+               placeholder="0"
+               value={buildingIncome}
+               onChange={(e) => setBuildingIncome(e.target.value)}
+               className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-4 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+             />
+          </div>
         </div>
 
         <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Unit Performance Data</h3>
@@ -167,7 +217,7 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
         </div>
 
         {/* Bazar Section */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-12">
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-6">
           <div className="flex justify-between items-center mb-6">
              <div className="flex items-center gap-3">
                <div className="p-2 bg-rose-50 rounded-xl">
@@ -214,6 +264,62 @@ const AddLogPage: React.FC<AddLogPageProps> = ({ onSave, units, editingLog, onCa
               />
               <button 
                 onClick={addBazarItem}
+                className="bg-indigo-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
+              >
+                <Plus size={24} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Other Details Section */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-12">
+          <div className="flex justify-between items-center mb-6">
+             <div className="flex items-center gap-3">
+               <div className="p-2 bg-amber-50 rounded-xl">
+                <ListPlus size={22} className="text-amber-600" />
+               </div>
+               <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Other Details</h4>
+             </div>
+             <div className="bg-slate-900 text-white px-4 py-2 rounded-2xl font-black text-sm shadow-lg shadow-slate-200">
+               TK {totalOtherPrice.toLocaleString()}
+             </div>
+          </div>
+
+          <div className="mb-6">
+            {otherItems.length > 0 && (
+               <div className="space-y-3 mb-6">
+                 {otherItems.map((item) => (
+                   <div key={item.id} className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <div>
+                        <span className="block text-sm font-black text-slate-900 uppercase tracking-tighter">{item.name}</span>
+                        <span className="text-[11px] font-bold text-slate-500 uppercase">Cost: TK {item.price.toLocaleString()}</span>
+                      </div>
+                      <button onClick={() => removeOtherItem(item.id)} className="bg-white p-2 rounded-xl text-rose-500 shadow-sm border border-slate-100 active:scale-90 transition-transform">
+                        <Trash2 size={18} />
+                      </button>
+                   </div>
+                 ))}
+               </div>
+            )}
+
+            <div className="flex gap-2">
+              <input 
+                type="text"
+                placeholder="Description"
+                value={newOtherName}
+                onChange={(e) => setNewOtherName(e.target.value)}
+                className="flex-[2] bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+              <input 
+                type="number"
+                placeholder="Price"
+                value={newOtherPrice}
+                onChange={(e) => setNewOtherPrice(e.target.value)}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+              <button 
+                onClick={addOtherItem}
                 className="bg-indigo-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
               >
                 <Plus size={24} />

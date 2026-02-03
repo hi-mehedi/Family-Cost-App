@@ -23,6 +23,9 @@ export const MOCK_LOGS: DailyLog[] = [
     ],
     bazarItems: [
       { id: 'b1', name: 'Rice & Oil', price: 450 }
-    ]
+    ],
+    // Fix: Added missing mandatory properties 'otherItems' and 'buildingIncome'
+    otherItems: [],
+    buildingIncome: 0
   }
 ];
